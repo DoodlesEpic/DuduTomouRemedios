@@ -21,6 +21,7 @@ Um app carinhoso de checklist diária de remédios, com tema de shiba inu e ilus
   - **Todos tomados** → Bubu comemorando com o shiba pulando e a mensagem *"Parabéns, Dudu! Bubu te ama muito!"* 🎉
 - 📊 Barra de progresso do dia
 - 🗓️ **Histórico visual dos últimos 7 dias**, com carinha e placar (ex.: 4/4) de cada dia
+- 🌙 **Modo escuro**: segue automaticamente o tema do aparelho e permite alternar no botão acima do cabeçalho entre automático (🖥️), claro (☀️) e escuro (🌙)
 - 📴 Funciona **offline** depois de instalado (PWA)
 - 💾 O progresso fica salvo no próprio celular, e cada dia tem sua checklist
 
