@@ -35,7 +35,7 @@ No iPhone: abra no **Safari** → botão de compartilhar → **"Adicionar à Tel
 
 ## 🤖 Aplicativo Android (APK)
 
-Além da PWA, o app também existe como **aplicativo Android de verdade**, feito com [Tauri 2](https://v2.tauri.app/) usando o mesmo `index.html`. No aplicativo, os dados ficam guardados no próprio app, e **limpar os dados do navegador não apaga nada**. (Só desinstalar o app apaga, então faça um backup antes.)
+Além da PWA, o app também existe como **aplicativo Android de verdade**, feito com [Tauri 2](https://v2.tauri.app/) usando os mesmos arquivos da web. No aplicativo, os dados ficam guardados no próprio app, e **limpar os dados do navegador não apaga nada**. (Só desinstalar o app apaga, então faça um backup antes.)
 
 ### Baixar o APK
 
@@ -84,7 +84,10 @@ npm run tauri android build -- --apk
 
 | Arquivo | Função |
 |---|---|
-| `index.html` | O app inteiro (interface, lógica e ilustrações embutidas) |
+| `index.html` | Estrutura principal da interface |
+| `styles.css` | Estilos visuais e temas (claro e escuro) |
+| `main.js` | Lógica do aplicativo em módulo ES nativo |
+| `img/` | Ilustrações chibi da Bubu e do shiba em formato PNG |
 | `manifest.json` | Configuração da PWA (nome, cores, ícones) |
 | `sw.js` | Service worker que deixa o app funcionar offline |
 | `icon-192.png` / `icon-512.png` | Ícones da Bubu para a tela inicial |
@@ -94,9 +97,9 @@ npm run tauri android build -- --apk
 
 ## 🔧 Como personalizar
 
-- **Remédios padrão** (usados só na primeira vez que o app abre): edite a lista `MEDS_PADRAO` no início do `<script>` em `index.html`. Depois disso, a lista é editada pelo próprio app
-- **Mensagens**: procure os textos em `humor.textContent` e no balão `.fala`
-- Depois de editar, é só reenviar o arquivo pro repositório. O app instalado se atualiza sozinho na próxima abertura com internet (o histórico não se perde!)
+- **Remédios padrão** (usados só na primeira vez que o app abre): edite a lista `MEDS_PADRAO` no início de `main.js`. Depois disso, a lista é editada pelo próprio app
+- **Mensagens**: procure os textos em `humor.textContent` em `main.js` e no balão `.fala` em `index.html`
+- Depois de editar, é só reenviar os arquivos pro repositório. O app instalado se atualiza sozinho na próxima abertura com internet (o histórico não se perde!)
 
 ---
 
