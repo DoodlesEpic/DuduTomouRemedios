@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#F2A25C">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -17,7 +17,8 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{font-family:'Baloo 2',system-ui,sans-serif;background:var(--creme);
     background-image:radial-gradient(#F6DDBE 12%,transparent 13%);background-size:34px 34px;
-    color:var(--marrom);min-height:100vh;display:flex;justify-content:center;padding:16px 12px 40px}
+    color:var(--marrom);min-height:100vh;display:flex;justify-content:center;
+    padding:calc(16px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) calc(40px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px))}
   .app{width:100%;max-width:430px}
   header{background:var(--shiba);border:3px solid var(--marrom);border-radius:26px;
     padding:16px 18px 14px;text-align:center;box-shadow:0 5px 0 var(--marrom)}
@@ -164,7 +165,7 @@
 
   <div class="cartao">
     <h2>💾 Backup</h2>
-    <p>Os dados ficam só neste navegador. Se você limpar os dados do navegador, eles somem — salve um backup antes e restaure depois!</p>
+    <p>Os dados ficam só neste navegador. Se você limpar os dados do navegador, eles somem, então salve um backup antes e restaure depois!</p>
     <div class="acoes">
       <button class="botao-sec" id="btnExportar">⬇️ Salvar backup</button>
       <label class="botao-sec" tabindex="0" id="lblImportar">⬆️ Restaurar<input type="file" id="arqBackup" accept="application/json,.json" hidden></label>
@@ -310,7 +311,7 @@ function render(){
       if(!isNaN(h)){
         const madrugada = h.getHours()<4;
         const hora = el('div','hora'+(madrugada?' madrugada':''),'tomado às '+fmtHora(h)+(madrugada?' 🌙':''));
-        if(madrugada) hora.title = 'Marcado de madrugada — era pra ter sido no dia anterior?';
+        if(madrugada) hora.title = 'Marcado de madrugada. Era pra ter sido no dia anterior?';
         info.appendChild(hora);
       }
     }

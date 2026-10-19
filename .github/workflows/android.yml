@@ -30,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -101,12 +103,25 @@ jobs:
           name: remedios-do-dudu-apk
           path: remedios-do-dudu.apk
 
+      - name: Verificar tag de release
+        id: tag
+        run: |
+          if [ -n "${{ inputs.release }}" ]; then
+            echo "nome=${{ inputs.release }}" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "nome=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            VER="v$(node -p "JSON.parse(fs.readFileSync('./src-tauri/tauri.conf.json','utf8')).version")"
+            if ! git rev-parse "$VER" >/dev/null 2>&1; then
+              echo "nome=$VER" >> "$GITHUB_OUTPUT"
+            fi
+          fi
+
       - name: Anexar ao release
-        if: startsWith(github.ref, 'refs/tags/v') || inputs.release != ''
+        if: steps.tag.outputs.nome != ''
         uses: softprops/action-gh-release@v2
         with:
-          # numa tag v*, usa a própria tag; no disparo manual, cria a tag informada neste commit
-          tag_name: ${{ inputs.release || github.ref_name }}
+          tag_name: ${{ steps.tag.outputs.nome }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
           files: remedios-do-dudu.apk
