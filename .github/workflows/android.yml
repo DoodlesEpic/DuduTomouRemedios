@@ -6,6 +6,11 @@ on:
     tags: ['v*']   # uma tag v* também publica o APK no release
     paths: &arquivos-do-app
       - 'index.html'
+      - 'styles.css'
+      - 'main.js'
+      - 'img/**'
+      - 'sw.js'
+      - 'manifest.json'
       - 'src-tauri/**'
       - 'scripts/**'
       - 'package*.json'
