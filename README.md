@@ -12,6 +12,7 @@ Um app carinhoso de checklist diária de remédios, com tema de shiba inu e ilus
 - ➕ Campo para **adicionar outros remédios**
 - ✏️ **Editar a lista permanente**: no modo *Editar lista* dá pra tirar qualquer remédio (com confirmação). Remédios tirados vão para **Remédios guardados**, com o histórico preservado, e podem voltar pra lista quando quiser
 - ⏰ **Horário de cada remédio tomado** aparece abaixo do nome (com 🌙 quando foi marcado de madrugada)
+- ↩️ **Botão de desfazer**: um aviso rápido aparece ao marcar ou desmarcar um remédio, permitindo desfazer cliques acidentais e restaurar o horário original
 - ↕️ **Reordenar os remédios**: segure um item e arraste (ou use o ⠿ no modo de edição, ou Alt+↑/↓ no teclado)
 - 💾 **Backup**: salve um arquivo `.json` com todos os dados e restaure depois, útil se você limpa os dados do navegador
 - 🎭 **A Bubu e o shiba reagem ao progresso**:

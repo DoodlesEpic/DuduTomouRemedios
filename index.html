@@ -124,6 +124,15 @@
   dialog p{font-weight:600;font-size:.95rem;color:#7A5A44}
   dialog .botoes{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
   dialog .botoes button[value="sim"]{background:var(--shiba);color:var(--branco);text-shadow:1px 1px 0 var(--marrom)}
+  .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);
+    background:var(--branco);color:var(--marrom);border:3px solid var(--marrom);border-radius:999px;
+    padding:8px 10px 8px 16px;box-shadow:0 5px 0 var(--marrom);display:flex;align-items:center;gap:10px;
+    max-width:calc(100% - 24px);width:max-content;z-index:20;font-weight:700;font-size:.95rem;animation:popToast .25s ease}
+  .toast span{overflow-wrap:anywhere}
+  .toast button{font-family:inherit;font-weight:800;font-size:.9rem;background:var(--shiba);color:var(--branco);
+    border:2.5px solid var(--marrom);border-radius:999px;padding:4px 12px;cursor:pointer;flex:none;
+    text-shadow:1px 1px 0 var(--marrom)}
+  @keyframes popToast{0%{transform:translate(-50%, 16px);opacity:0}100%{transform:translate(-50%, 0);opacity:1}}
   input:focus-visible,button:focus-visible,.med:focus-visible{outline:3px dashed var(--shiba-escuro);outline-offset:2px}
 </style>
 </head>
@@ -176,6 +185,11 @@
   <div class="rodape">Feito com amor pela Bubu 🐾 marca um por um todo dia!</div>
 </div>
 
+<div class="toast" id="toast" role="status" aria-live="polite" hidden>
+  <span id="toastTexto"></span>
+  <button type="button" id="btnDesfazer">↩ Desfazer</button>
+</div>
+
 <dialog id="dialogo">
   <form method="dialog">
     <h3 id="dialogoTitulo"></h3>
@@ -225,6 +239,7 @@ function lerJSON(raw, padrao){
 }
 
 async function carregar(){
+  esconderToast();
   diaAtual = hojeChave();
   meds = lerJSON(await store.get('meds-lista'), [...MEDS_PADRAO]);
   arquivados = lerJSON(await store.get('meds-arquivados'), []);
@@ -283,6 +298,25 @@ function confirmar(titulo, texto, sim='Sim', nao='Cancelar'){
 }
 function avisar(titulo, texto){ return confirmar(titulo, texto, 'Ok', null); }
 
+// ---------- toast de desfazer ----------
+let timerToast=null, acaoDesfazer=null;
+function esconderToast(){
+  clearTimeout(timerToast); timerToast=null; acaoDesfazer=null;
+  document.getElementById('toast').hidden=true;
+}
+function mostrarToast(texto, desfazer){
+  clearTimeout(timerToast);
+  acaoDesfazer=desfazer;
+  document.getElementById('toastTexto').textContent=texto;
+  document.getElementById('toast').hidden=false;
+  timerToast=setTimeout(esconderToast, 5000);
+}
+document.getElementById('btnDesfazer').addEventListener('click',()=>{
+  const fn=acaoDesfazer;
+  esconderToast();
+  if(fn) fn();
+});
+
 // ---------- lista do dia ----------
 function render(){
   const lista = document.getElementById('lista');
@@ -333,9 +367,15 @@ function render(){
       if(ignorarClique){ ignorarClique=false; return; }
       if(e.target.closest('.tirar')){ removerMed(m); return; }
       if(editando) return;
-      if(marcados[m]) delete marcados[m];
+      const anterior = marcados[m];
+      if(anterior) delete marcados[m];
       else marcados[m] = new Date().toISOString();
       salvar().then(renderHistorico); render();
+      mostrarToast(anterior ? `${m} desmarcado` : `${m} marcado`, ()=>{
+        if(anterior) marcados[m] = anterior;
+        else delete marcados[m];
+        salvar().then(renderHistorico); render();
+      });
       const novo = document.querySelectorAll('#lista .med')[i];
       if(novo && document.activeElement===document.body) novo.focus({preventScroll:true});
     });
