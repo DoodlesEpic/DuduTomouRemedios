@@ -5,6 +5,11 @@ let medsPerm = [...MEDS_PADRAO]; // lista permanente (meds-lista)
 let arquivados = []; // remédios que saíram da lista, mas cujo histórico continua salvo
 let marcados = {}; // remédio -> horário em que foi marcado (ISO) ou true (registros antigos)
 let editando = false;
+let alarmes = [];
+let configNotif = { inteligente: false };
+let medsChipSelecionados = new Set();
+let horariosInteligentes = {};
+let abaAtiva = "remedios";
 
 const img = (nome) => `img/${nome}.png`;
 const $ = (id) => document.getElementById(id);
@@ -119,6 +124,13 @@ async function carregar(chaveDia) {
   diaSelecionado = chaveDia || diaAtual;
   medsPerm = lerJSON(await store.get("meds-lista"), [...MEDS_PADRAO]);
   arquivados = lerJSON(await store.get("meds-arquivados"), []);
+  alarmes = lerJSON(await store.get("alarmes"), []);
+  configNotif = lerJSON(await store.get("notif-config"), {
+    inteligente: false,
+  });
+  if (medsChipSelecionados.size === 0) {
+    medsPerm.forEach((m) => medsChipSelecionados.add(m));
+  }
   if (vendoPassado()) {
     const listaSalva = lerJSON(
       await store.get(`lista:${diaSelecionado.slice(4)}`),
@@ -136,6 +148,7 @@ async function carregar(chaveDia) {
   renderArquivados();
   renderHistorico();
   renderInfoBackup();
+  await renderAbaAlarmes();
 }
 
 async function salvar() {
@@ -143,6 +156,8 @@ async function salvar() {
   await store.set("meds-arquivados", JSON.stringify(arquivados));
   await store.set(diaSelecionado, JSON.stringify(marcados));
   await store.set(`lista:${diaSelecionado.slice(4)}`, JSON.stringify(meds));
+  await store.set("alarmes", JSON.stringify(alarmes));
+  await store.set("notif-config", JSON.stringify(configNotif));
 }
 
 function atualizarData() {
@@ -164,11 +179,12 @@ $("btnVoltarHoje").addEventListener("click", () => carregar());
 // se o app ficar aberto e virar o dia, começa a checklist do novo dia
 function conferirVirada() {
   if (hojeChave() !== diaAtual) carregar();
+  checarAlarmes();
 }
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) conferirVirada();
 });
-setInterval(conferirVirada, 60000);
+setInterval(conferirVirada, 20000);
 
 function cena(bubu, shiba, clsShiba = "", clsBubu = "") {
   return (
@@ -693,7 +709,8 @@ async function renderHistorico() {
 }
 
 // ---------- backup ----------
-const CHAVE_DADO = /^(dia:|lista:|meds-lista$|meds-arquivados$)/;
+const CHAVE_DADO =
+  /^(dia:|lista:|meds-lista$|meds-arquivados$|alarmes$|notif-config$)/;
 
 async function coletarDados() {
   const dados = {};
@@ -706,7 +723,12 @@ async function coletarDados() {
     } catch {}
     return dados;
   }
-  for (const k of ["meds-lista", "meds-arquivados"]) {
+  for (const k of [
+    "meds-lista",
+    "meds-arquivados",
+    "alarmes",
+    "notif-config",
+  ]) {
     const v = await store.get(k);
     if (v !== null) dados[k] = v;
   }
@@ -845,9 +867,11 @@ $("btnAdd").addEventListener("click", async () => {
   meds.push(nome);
   if (!medsPerm.some((m) => m.toLowerCase() === nome.toLowerCase()))
     medsPerm.push(nome);
+  medsChipSelecionados.add(nome);
   await salvar();
   renderHistorico();
   render();
+  renderAbaAlarmes();
 });
 
 $("novoMed").addEventListener("keydown", (e) => {
@@ -864,6 +888,427 @@ document.addEventListener("pointerdown", (e) => {
   editando = false;
   render();
 });
+
+// ---------- abas, gestos de deslizar e barra flutuante ----------
+function trocarAba(nova) {
+  if (nova !== "remedios" && nova !== "alarmes") return;
+  abaAtiva = nova;
+  $("abaRemedios").hidden = nova !== "remedios";
+  $("abaAlarmes").hidden = nova !== "alarmes";
+  document.querySelectorAll(".aba-btn").forEach((btn) => {
+    const ativa = btn.dataset.aba === nova;
+    btn.classList.toggle("ativo", ativa);
+    btn.setAttribute("aria-selected", ativa);
+  });
+  if (nova === "alarmes") renderAbaAlarmes();
+}
+
+document.querySelectorAll(".aba-btn").forEach((btn) => {
+  btn.addEventListener("click", () => trocarAba(btn.dataset.aba));
+});
+
+let ultimoScrollY = window.scrollY;
+window.addEventListener(
+  "scroll",
+  () => {
+    const atual = window.scrollY;
+    const delta = atual - ultimoScrollY;
+    if (delta > 8 && atual > 48) {
+      $("navAbas").classList.add("escondida");
+    } else if (delta < -8 || atual <= 24) {
+      $("navAbas").classList.remove("escondida");
+    }
+    ultimoScrollY = atual;
+  },
+  { passive: true },
+);
+
+let gestoToque = null;
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    if (e.touches.length !== 1 || drag || pre || !$("alarmeCheio").hidden)
+      return;
+    if (e.target.closest("input, select, dialog")) return;
+    const t = e.touches[0];
+    gestoToque = { x: t.clientX, y: t.clientY, t: Date.now() };
+  },
+  { passive: true },
+);
+
+document.addEventListener(
+  "touchend",
+  (e) => {
+    if (!gestoToque || e.changedTouches.length !== 1 || drag || pre) {
+      gestoToque = null;
+      return;
+    }
+    const t = e.changedTouches[0];
+    const dx = t.clientX - gestoToque.x;
+    const dy = t.clientY - gestoToque.y;
+    const dt = Date.now() - gestoToque.t;
+    gestoToque = null;
+    if (dt < 600 && Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+      if (dx < 0 && abaAtiva === "remedios") trocarAba("alarmes");
+      else if (dx > 0 && abaAtiva === "alarmes") trocarAba("remedios");
+    }
+  },
+  { passive: true },
+);
+
+// ---------- alarmes e lembretes inteligentes ----------
+const ROTULO_TIPO_ALARME = {
+  alarme: "🚨 Tela cheia + som",
+  cheia: "📱 Tela cheia",
+  notificacao: "🔔 Só notificação",
+};
+
+function atualizarStatusPermissao() {
+  const txt = $("statusPermissao");
+  const btn = $("btnPermissao");
+  if (!("Notification" in window)) {
+    txt.textContent =
+      "Este navegador não suporta notificações do sistema, mas o alarme em tela cheia com som funciona com o app aberto!";
+    btn.hidden = true;
+    return;
+  }
+  if (Notification.permission === "granted") {
+    txt.textContent =
+      "Notificações do sistema ativas! A Bubu vai te avisar nos horários combinados. 💕";
+    btn.hidden = true;
+  } else if (Notification.permission === "denied") {
+    txt.textContent =
+      "As notificações foram bloqueadas no navegador. Você ainda recebe alarmes em tela cheia com o app aberto.";
+    btn.hidden = true;
+  } else {
+    txt.textContent =
+      "Ative as notificações para a Bubu te chamar na hora certa, além do alarme na tela!";
+    btn.hidden = false;
+  }
+}
+
+$("btnPermissao").addEventListener("click", async () => {
+  if (!("Notification" in window)) return;
+  try {
+    const res = await Notification.requestPermission();
+    atualizarStatusPermissao();
+    if (res === "granted") mostrarToast("🔔 Notificações ativadas!");
+  } catch {}
+});
+
+async function calcularHorariosInteligentes() {
+  const hoje = new Date();
+  const amostrasPorMed = {};
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(hoje);
+    d.setDate(hoje.getDate() - i);
+    const reg = lerJSON(await store.get(chaveDe(d)), {});
+    const peso = 0.85 ** (i - 1);
+    for (const [med, val] of Object.entries(reg)) {
+      if (typeof val !== "string") continue;
+      const dt = new Date(val);
+      if (isNaN(dt)) continue;
+      let min = dt.getHours() * 60 + dt.getMinutes();
+      // tomadas de madrugada contam como fim da noite para não distorcer a média
+      if (min < 240) min += 1440;
+      (amostrasPorMed[med] ??= []).push({ min, peso });
+    }
+  }
+  const resultado = {};
+  for (const m of medsPerm) {
+    const lista = amostrasPorMed[m];
+    if (!lista?.length) continue;
+    const somaPesos = lista.reduce((s, x) => s + x.peso, 0);
+    const media =
+      Math.round(lista.reduce((s, x) => s + x.min * x.peso, 0) / somaPesos) %
+      1440;
+    const hh = String(Math.floor(media / 60)).padStart(2, "0");
+    const mm = String(media % 60).padStart(2, "0");
+    resultado[m] = `${hh}:${mm}`;
+  }
+  horariosInteligentes = resultado;
+  return resultado;
+}
+
+async function renderAbaAlarmes() {
+  atualizarStatusPermissao();
+  $("chkInteligente").checked = Boolean(configNotif.inteligente);
+
+  const sugestoes = await calcularHorariosInteligentes();
+  const contSug = $("listaSugestoes");
+  contSug.innerHTML = "";
+  medsPerm.forEach((m) => {
+    const item = el("div", "sugestao-item");
+    item.appendChild(el("span", "", m));
+    const h = sugestoes[m];
+    item.appendChild(
+      el(
+        "span",
+        "sugestao-hora",
+        h ? `✨ Sugerido: ${h}` : "Sem histórico suficiente",
+      ),
+    );
+    contSug.appendChild(item);
+  });
+
+  const contChips = $("chipsMedsAlarme");
+  contChips.innerHTML = "";
+  medsPerm.forEach((m) => {
+    const ativo = medsChipSelecionados.has(m);
+    const chip = el("button", `chip-med${ativo ? " ativo" : ""}`, m);
+    chip.type = "button";
+    chip.setAttribute("aria-pressed", ativo);
+    chip.addEventListener("click", () => {
+      if (medsChipSelecionados.has(m)) medsChipSelecionados.delete(m);
+      else medsChipSelecionados.add(m);
+      renderAbaAlarmes();
+    });
+    contChips.appendChild(chip);
+  });
+
+  const contAlarmes = $("listaAlarmes");
+  contAlarmes.innerHTML = "";
+  if (alarmes.length === 0) {
+    contAlarmes.appendChild(
+      el("div", "dica", "Nenhum alarme criado ainda. Crie um acima!"),
+    );
+    return;
+  }
+  alarmes.forEach((al) => {
+    const item = el("div", `alarme-item${al.ativo ? "" : " inativo"}`);
+    const info = el("div", "alarme-info");
+    info.appendChild(el("div", "alarme-hora", al.hora));
+    const nomes = al.meds?.length ? al.meds.join(", ") : "Todos os remédios";
+    info.appendChild(
+      el(
+        "div",
+        "alarme-meta",
+        `${ROTULO_TIPO_ALARME[al.tipo] || ROTULO_TIPO_ALARME.alarme} · ${nomes}`,
+      ),
+    );
+    item.appendChild(info);
+
+    const ctrl = el("div", "alarme-controles");
+    const chk = el("input");
+    chk.type = "checkbox";
+    chk.checked = Boolean(al.ativo);
+    chk.setAttribute("aria-label", `Ativar alarme das ${al.hora}`);
+    chk.addEventListener("change", async () => {
+      al.ativo = chk.checked;
+      await salvar();
+      renderAbaAlarmes();
+    });
+    ctrl.appendChild(chk);
+
+    const btnDel = el("button", "tirar", "✕");
+    btnDel.type = "button";
+    btnDel.setAttribute("aria-label", `Apagar alarme das ${al.hora}`);
+    btnDel.addEventListener("click", async () => {
+      alarmes = alarmes.filter((x) => x.id !== al.id);
+      await salvar();
+      renderAbaAlarmes();
+      mostrarToast("Alarme removido");
+    });
+    ctrl.appendChild(btnDel);
+
+    item.appendChild(ctrl);
+    contAlarmes.appendChild(item);
+  });
+}
+
+$("chkInteligente").addEventListener("change", async (e) => {
+  configNotif.inteligente = e.target.checked;
+  await salvar();
+  mostrarToast(
+    configNotif.inteligente
+      ? "✨ Lembretes inteligentes ativados"
+      : "Lembretes inteligentes desativados",
+  );
+});
+
+$("btnCriarAlarme").addEventListener("click", async () => {
+  const hora = $("horaAlarme").value || "08:00";
+  const tipo = $("tipoAlarme").value || "alarme";
+  const escolhidos = medsPerm.filter((m) => medsChipSelecionados.has(m));
+  if (escolhidos.length === 0) {
+    mostrarToast("Escolha pelo menos um remédio!");
+    return;
+  }
+  alarmes.push({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    hora,
+    tipo,
+    meds: escolhidos,
+    ativo: true,
+  });
+  alarmes.sort((a, b) => a.hora.localeCompare(b.hora));
+  await salvar();
+  renderAbaAlarmes();
+  mostrarToast(`⏰ Alarme criado para ${hora}`);
+});
+
+// ---------- som de alarme (Web Audio API) e disparo ----------
+let timerSomAlarme = null;
+let ctxAudio = null;
+let medsAlarmeAtual = [];
+let sonecas = [];
+const disparosHoje = new Set();
+
+function tocarBipeCarinhoso() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    if (!ctxAudio) ctxAudio = new AudioCtx();
+    if (ctxAudio.state === "suspended") ctxAudio.resume();
+    const notas = [523.25, 659.25, 783.99, 1046.5];
+    notas.forEach((freq, idx) => {
+      const osc = ctxAudio.createOscillator();
+      const gain = ctxAudio.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const inicio = ctxAudio.currentTime + idx * 0.14;
+      gain.gain.setValueAtTime(0.001, inicio);
+      gain.gain.exponentialRampToValueAtTime(0.18, inicio + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.28);
+      osc.connect(gain);
+      gain.connect(ctxAudio.destination);
+      osc.start(inicio);
+      osc.stop(inicio + 0.3);
+    });
+    navigator.vibrate?.([200, 100, 200]);
+  } catch {}
+}
+
+function pararSomAlarme() {
+  clearInterval(timerSomAlarme);
+  timerSomAlarme = null;
+}
+
+async function enviarNotificacaoSistema(titulo, corpo) {
+  if (!("Notification" in window) || Notification.permission !== "granted")
+    return;
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration?.();
+    if (reg?.showNotification) {
+      await reg.showNotification(titulo, {
+        body: corpo,
+        icon: "icon-192.png",
+        badge: "icon-192.png",
+        tag: "dudu-alarme",
+        renotify: true,
+      });
+      return;
+    }
+    new Notification(titulo, { body: corpo, icon: "icon-192.png" });
+  } catch {}
+}
+
+function dispararAviso(medsAlvo, tipo = "alarme", origem = "") {
+  const pendentes = medsAlvo.filter((m) => !marcados[m]);
+  const listaNomes = pendentes.length > 0 ? pendentes : medsAlvo;
+  if (listaNomes.length === 0) return;
+  const texto = `${origem ? `${origem}: ` : ""}Hora de tomar ${listaNomes.join(", ")}!`;
+  enviarNotificacaoSistema("Hora do remédio, Dudu! 💊", texto);
+
+  if (tipo === "notificacao") {
+    mostrarToast(`🔔 ${texto}`);
+    return;
+  }
+
+  medsAlarmeAtual = listaNomes;
+  $("alarmeTexto").textContent = texto;
+  $("alarmeCheio").hidden = false;
+  pararSomAlarme();
+  if (tipo === "alarme") {
+    tocarBipeCarinhoso();
+    timerSomAlarme = setInterval(tocarBipeCarinhoso, 3200);
+  }
+}
+
+function fecharAlarmeCheio() {
+  pararSomAlarme();
+  $("alarmeCheio").hidden = true;
+  medsAlarmeAtual = [];
+}
+
+$("btnAlarmeFechar").addEventListener("click", fecharAlarmeCheio);
+
+$("btnAlarmeSoneca").addEventListener("click", () => {
+  const copia = [...medsAlarmeAtual];
+  fecharAlarmeCheio();
+  const alvo = new Date(Date.now() + 10 * 60000);
+  const hh = String(alvo.getHours()).padStart(2, "0");
+  const mm = String(alvo.getMinutes()).padStart(2, "0");
+  sonecas.push({ hora: `${hh}:${mm}`, meds: copia });
+  mostrarToast(`💤 Soneca ativada para ${hh}:${mm}`);
+});
+
+$("btnAlarmeTomar").addEventListener("click", async () => {
+  const copia = [...medsAlarmeAtual];
+  fecharAlarmeCheio();
+  if (vendoPassado()) await carregar();
+  const agora = new Date().toISOString();
+  copia.forEach((m) => {
+    if (!marcados[m]) {
+      marcados[m] = agora;
+      medAnimando = m;
+    }
+  });
+  await salvar();
+  render();
+  renderHistorico();
+  medAnimando = null;
+  mostrarToast(`✅ ${copia.join(", ")} marcado!`);
+});
+
+$("btnTestarAlarme").addEventListener("click", () => {
+  dispararAviso(
+    medsPerm.length ? [medsPerm[0]] : ["Remédio"],
+    "alarme",
+    "Teste",
+  );
+});
+
+function checarAlarmes() {
+  const agora = new Date();
+  const chHoje = hojeChave();
+  const hh = String(agora.getHours()).padStart(2, "0");
+  const mm = String(agora.getMinutes()).padStart(2, "0");
+  const horaAtual = `${hh}:${mm}`;
+
+  // se estiver vendo hoje, usa marcados em memória
+  if (diaSelecionado !== chHoje) return;
+
+  alarmes.forEach((al) => {
+    if (!al.ativo || al.hora !== horaAtual) return;
+    const chaveDisp = `${chHoje}:al:${al.id}:${horaAtual}`;
+    if (disparosHoje.has(chaveDisp)) return;
+    const pendentes = (al.meds || medsPerm).filter((m) => !marcados[m]);
+    if (pendentes.length === 0) return;
+    disparosHoje.add(chaveDisp);
+    dispararAviso(pendentes, al.tipo);
+  });
+
+  if (configNotif.inteligente) {
+    for (const [med, hSug] of Object.entries(horariosInteligentes)) {
+      if (hSug !== horaAtual || marcados[med]) continue;
+      const chaveDisp = `${chHoje}:int:${med}:${horaAtual}`;
+      if (disparosHoje.has(chaveDisp)) continue;
+      disparosHoje.add(chaveDisp);
+      dispararAviso([med], "alarme", "✨ Lembrete inteligente");
+    }
+  }
+
+  const restantes = [];
+  for (const s of sonecas) {
+    if (s.hora === horaAtual) {
+      dispararAviso(s.meds, "alarme", "💤 Soneca");
+    } else {
+      restantes.push(s);
+    }
+  }
+  sonecas = restantes;
+}
 
 navigator.storage?.persist?.().catch(() => {});
 if ("serviceWorker" in navigator && location.protocol === "https:") {
