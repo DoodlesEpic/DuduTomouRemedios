@@ -4,11 +4,14 @@
   --shiba: #f2a25c;
   --shiba-escuro: #d97f3e;
   --marrom: #4a3226;
+  --borda: #4a3226;
   --sombra: #4a3226;
   --branco: #fffdf9;
+  --campo: #fff3e2;
   --rosa: #f7c8c4;
   --verde: #8fbf7f;
   --ok-bg: #eaf6e4;
+  --ok-borda: #4a3226;
   --parcial-bg: #fbebd2;
   --arrasto-bg: #fff8ec;
   --subtexto: #9c7a5c;
@@ -21,24 +24,27 @@
 }
 
 html[data-tema="escuro"] {
-  --creme: #1e1612;
-  --ponto: #2c201a;
-  --shiba: #d9823b;
-  --shiba-escuro: #f2a25c;
-  --marrom: #f5e6d3;
-  --sombra: #0e0907;
-  --branco: #2b201a;
-  --rosa: #5c3434;
-  --verde: #6fa85e;
-  --ok-bg: #22351e;
-  --parcial-bg: #3d2b1a;
-  --arrasto-bg: #382920;
-  --subtexto: #c4a68a;
-  --placeholder: #8c725b;
-  --divisor: #4a372b;
-  --hora: #8fbf7f;
-  --madrugada: #b39ddb;
-  --dialogo-txt: #d9c2ad;
+  --creme: #18161b;
+  --ponto: #232029;
+  --shiba: #e58e49;
+  --shiba-escuro: #f4a663;
+  --marrom: #f3eae0;
+  --borda: #3e3846;
+  --sombra: #0e0c11;
+  --branco: #232027;
+  --campo: #2d2934;
+  --rosa: #462b33;
+  --verde: #68b66b;
+  --ok-bg: #1f3024;
+  --ok-borda: #3d6346;
+  --parcial-bg: #332820;
+  --arrasto-bg: #302b38;
+  --subtexto: #b2a59b;
+  --placeholder: #7e736c;
+  --divisor: #38323f;
+  --hora: #88cf8b;
+  --madrugada: #b9a4e8;
+  --dialogo-txt: #cfc3b9;
   color-scheme: dark;
 }
 
@@ -83,7 +89,7 @@ body.arrastando {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  border: 2.5px solid var(--marrom);
+  border: 2.5px solid var(--borda);
   background: var(--branco);
   color: var(--marrom);
   font-size: 1.05rem;
@@ -105,11 +111,15 @@ body.arrastando {
 
 header {
   background: var(--shiba);
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 26px;
   padding: 16px 18px 14px;
   text-align: center;
   box-shadow: 0 5px 0 var(--sombra);
+}
+
+html[data-tema="escuro"] header {
+  border-color: #593922;
 }
 
 h1 {
@@ -128,13 +138,13 @@ h1 {
   display: inline-block;
   padding: 2px 14px;
   border-radius: 999px;
-  border: 2px solid var(--marrom);
+  border: 2px solid var(--borda);
 }
 
 .aviso-passado {
   margin-top: 14px;
   background: var(--parcial-bg);
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 20px;
   padding: 10px 14px;
   box-shadow: 0 4px 0 var(--sombra);
@@ -155,11 +165,21 @@ h1 {
 .palco {
   margin: 18px 0 14px;
   background: var(--branco);
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 26px;
   padding: 14px 12px 10px;
   text-align: center;
   box-shadow: 0 5px 0 var(--sombra);
+}
+
+html[data-tema="escuro"] .palco {
+  background: radial-gradient(circle at 50% 46%, #332d3b 0%, var(--branco) 74%);
+}
+
+html[data-tema="escuro"] .dupla img,
+html[data-tema="escuro"] .dia .carinha img {
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45))
+    drop-shadow(0 0 1.5px rgba(255, 240, 225, 0.25));
 }
 
 .dupla {
@@ -228,7 +248,7 @@ h1 {
   margin: 6px auto 10px;
   max-width: 300px;
   background: var(--rosa);
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 18px;
   padding: 10px 14px;
   font-weight: 700;
@@ -244,7 +264,7 @@ h1 {
   bottom: -12px;
   transform: translateX(-50%);
   border: 10px solid transparent;
-  border-top-color: var(--marrom);
+  border-top-color: var(--borda);
 }
 
 .palco.completo .fala {
@@ -273,7 +293,7 @@ h1 {
 .progresso {
   margin-top: 14px;
   height: 20px;
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 999px;
   background: var(--branco);
   overflow: hidden;
@@ -299,7 +319,7 @@ h1 {
   align-items: center;
   gap: 12px;
   background: var(--branco);
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 20px;
   padding: 10px 14px;
   box-shadow: 0 4px 0 var(--sombra);
@@ -320,6 +340,7 @@ h1 {
 
 .med.ok {
   background: var(--ok-bg);
+  border-color: var(--ok-borda);
 }
 
 .med.animando-ok {
@@ -370,9 +391,9 @@ h1 {
   width: 34px;
   height: 34px;
   flex: none;
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 12px;
-  background: var(--creme);
+  background: var(--campo);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -464,7 +485,7 @@ h1 {
   }
 }
 
-.med .tirar {
+.tirar {
   border: none;
   background: none;
   font-size: 1.1rem;
@@ -473,6 +494,15 @@ h1 {
   padding: 4px;
   font-family: inherit;
   font-weight: 800;
+}
+
+.lista.editando .mini {
+  display: none;
+}
+
+.lista:not(.editando) .tirar,
+.lista:not(.editando) .alca {
+  display: none;
 }
 
 .med .alca {
@@ -496,7 +526,7 @@ h1 {
   font-family: inherit;
   font-size: 1rem;
   font-weight: 600;
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 16px;
   padding: 10px 14px;
   background: var(--branco);
@@ -514,7 +544,7 @@ h1 {
   font-size: 1rem;
   background: var(--shiba);
   color: #fffdf9;
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 16px;
   padding: 10px 16px;
   cursor: pointer;
@@ -541,7 +571,7 @@ h1 {
   font-size: 0.95rem;
   background: var(--branco);
   color: var(--marrom);
-  border: 2.5px solid var(--marrom);
+  border: 2.5px solid var(--borda);
   border-radius: 999px;
   padding: 6px 16px;
   cursor: pointer;
@@ -572,7 +602,7 @@ h1 {
 .historico {
   margin-top: 16px;
   background: var(--branco);
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 22px;
   padding: 12px 14px;
   box-shadow: 0 4px 0 var(--sombra);
@@ -647,9 +677,9 @@ h1 {
   width: 100%;
   max-width: 44px;
   aspect-ratio: 1;
-  border: 2.5px solid var(--marrom);
+  border: 2.5px solid var(--borda);
   border-radius: 14px;
-  background: var(--creme);
+  background: var(--campo);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -697,6 +727,12 @@ h1 {
   opacity: 0.35;
 }
 
+html[data-tema="escuro"] .med:not(.ok) .mini,
+html[data-tema="escuro"] .dia.vazio .carinha img {
+  filter: grayscale(1) brightness(1.35) contrast(0.85);
+  opacity: 0.42;
+}
+
 .dia .rotulo {
   font-size: 0.68rem;
   font-weight: 700;
@@ -735,7 +771,7 @@ h1 {
 
 dialog {
   margin: auto;
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 22px;
   background: var(--branco);
   color: var(--marrom);
@@ -783,7 +819,7 @@ dialog .botoes button[value="sim"] {
   transform: translateX(-50%);
   background: var(--branco);
   color: var(--marrom);
-  border: 3px solid var(--marrom);
+  border: 3px solid var(--borda);
   border-radius: 999px;
   padding: 8px 10px 8px 16px;
   box-shadow: 0 5px 0 var(--sombra);
@@ -812,7 +848,7 @@ dialog .botoes button[value="sim"] {
   font-size: 0.9rem;
   background: var(--shiba);
   color: #fffdf9;
-  border: 2.5px solid var(--marrom);
+  border: 2.5px solid var(--borda);
   border-radius: 999px;
   padding: 4px 12px;
   cursor: pointer;

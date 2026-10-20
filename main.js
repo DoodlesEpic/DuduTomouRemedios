@@ -76,6 +76,10 @@ const ROTULOS_TEMA = {
   escuro: "Tema escuro",
 };
 let modoTema = "sistema";
+try {
+  const salvo = localStorage.getItem("tema");
+  if (MODOS_TEMA.includes(salvo)) modoTema = salvo;
+} catch {}
 const midiaEscuro = window.matchMedia?.("(prefers-color-scheme: dark)");
 
 function aplicarTema() {
@@ -84,7 +88,7 @@ function aplicarTema() {
   document.documentElement.dataset.tema = escuro ? "escuro" : "claro";
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", escuro ? "#1E1612" : "#F2A25C");
+    ?.setAttribute("content", escuro ? "#18161B" : "#F2A25C");
   const btn = $("btnTema");
   if (btn) {
     btn.textContent = ICONES_TEMA[modoTema];
@@ -315,19 +319,19 @@ function render() {
     }
     div.appendChild(info);
 
-    if (editando) {
-      const tirar = el("button", "tirar", "✕");
-      tirar.setAttribute("aria-label", `Tirar ${m} da lista`);
-      div.appendChild(tirar);
-      const alca = el("div", "alca", "⠿");
-      alca.setAttribute("aria-hidden", "true");
-      div.appendChild(alca);
-    } else {
-      const mini = el("img", "mini");
-      mini.src = img("shiba_sentado");
-      mini.alt = "";
-      div.appendChild(mini);
-    }
+    const mini = el("img", "mini");
+    mini.src = img("shiba_sentado");
+    mini.alt = "";
+    div.appendChild(mini);
+
+    const tirar = el("button", "tirar", "✕");
+    tirar.type = "button";
+    tirar.setAttribute("aria-label", `Tirar ${m} da lista`);
+    div.appendChild(tirar);
+
+    const alca = el("div", "alca", "⠿");
+    alca.setAttribute("aria-hidden", "true");
+    div.appendChild(alca);
 
     div.addEventListener("click", async (e) => {
       if (ignorarClique) {
@@ -517,7 +521,7 @@ function prepararArrasto(div, e, imediato) {
   if (drag) return;
   pre = { el: div, id: e.pointerId, x: e.clientX, y: e.clientY, timer: null };
   if (imediato) iniciarArrasto();
-  else pre.timer = setTimeout(iniciarArrasto, 450);
+  else pre.timer = setTimeout(iniciarArrasto, editando ? 120 : 450);
 }
 
 function iniciarArrasto() {
@@ -529,6 +533,10 @@ function iniciarArrasto() {
     $("lista").classList.add("editando");
     $("dica").hidden = false;
     $("acoesEdicao").hidden = false;
+    document.querySelectorAll("#lista .med").forEach((item) => {
+      item.setAttribute("role", "listitem");
+      item.removeAttribute("aria-checked");
+    });
   }
   drag = { el: div, id, inicioY: y, mudou: false };
   div.classList.add("arrastando");
