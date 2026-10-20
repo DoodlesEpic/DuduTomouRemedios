@@ -19,6 +19,10 @@ Um app carinhoso de checklist diária de remédios, com tema de shiba inu e ilus
   - Parte tomada → Bubu neutra ou feliz, shiba atento ou rindo
   - **Todos tomados** → Bubu comemorando com o shiba pulando e a mensagem _"Parabéns, Dudu! Bubu te ama muito!"_ 🎉
 - 📊 Barra de progresso do dia
+- ⏰ **Notificações, alarmes e lembretes inteligentes**:
+  - Crie um ou mais alarmes para um ou vários remédios de uma vez, escolhendo entre **notificação simples**, **alerta em tela cheia** ou **alarme com som e soneca**
+  - **Lembretes inteligentes**: opção que calcula automaticamente o horário sugerido de cada remédio usando uma média ponderada exponencial dos últimos 14 dias (dando mais peso aos dias mais recentes)
+  - Alterne entre as abas **Remédios** e **Alarmes** deslizando para os lados ou usando o trocador de abas flutuante na parte inferior da tela (que se esconde ao rolar para baixo e reaparece ao subir)
 - 🗓️ **Histórico visual dos últimos 7 dias**, com carinha e placar (ex.: 4/4) de cada dia. Toque em um dia anterior para consultar a checklist daquele dia (com aviso de confirmação antes de alterar algo)
 - 🌙 **Modo escuro**: segue automaticamente o tema do aparelho e permite alternar no botão no rodapé da página entre automático (🖥️), claro (☀️) e escuro (🌙), exibindo um aviso com o tema ativo
 - 📴 Funciona **offline** depois de instalado (PWA)

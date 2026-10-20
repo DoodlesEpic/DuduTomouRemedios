@@ -1,4 +1,4 @@
-const CACHE = "dudu-remedios-v10";
+const CACHE = "dudu-remedios-v11";
 const FILES = [
   ".",
   "index.html",
@@ -37,4 +37,16 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((cs) => {
+        if (cs.length > 0) return cs[0].focus();
+        return self.clients.openWindow(".");
+      }),
+  );
 });

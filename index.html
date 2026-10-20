@@ -26,69 +26,142 @@
         <div class="data" id="dataHoje"></div>
       </header>
 
-      <div class="aviso-passado" id="avisoPassado" hidden>
-        <span id="textoPassado">📅 Vendo um dia anterior</span>
-        <button type="button" class="botao-sec ativo" id="btnVoltarHoje">
-          Voltar para hoje
-        </button>
-      </div>
+      <div class="abas-conteudo" id="abasConteudo">
+        <section class="aba" id="abaRemedios" aria-label="Remédios do dia">
+          <div class="aviso-passado" id="avisoPassado" hidden>
+            <span id="textoPassado">📅 Vendo um dia anterior</span>
+            <button type="button" class="botao-sec ativo" id="btnVoltarHoje">
+              Voltar para hoje
+            </button>
+          </div>
 
-      <div class="palco" id="palco">
-        <div class="fala">Parabéns, Dudu! Bubu te ama muito! 💕</div>
-        <div class="dupla" id="desenho"></div>
-        <div class="humor" id="humor"></div>
-      </div>
+          <div class="palco" id="palco">
+            <div class="fala">Parabéns, Dudu! Bubu te ama muito! 💕</div>
+            <div class="dupla" id="desenho"></div>
+            <div class="humor" id="humor"></div>
+          </div>
 
-      <div class="progresso"><div class="barra" id="barra"></div></div>
-      <div class="lista" id="lista"></div>
-      <div class="dica" id="dica" hidden>
-        Arraste para mudar a ordem · ✕ guarda o remédio · Toque em
-        <b>Pronto</b> para sair
-      </div>
+          <div class="progresso"><div class="barra" id="barra"></div></div>
+          <div class="lista" id="lista"></div>
+          <div class="dica" id="dica" hidden>
+            Arraste para mudar a ordem · ✕ guarda o remédio · Toque em
+            <b>Pronto</b> para sair
+          </div>
 
-      <div class="add">
-        <input
-          id="novoMed"
-          type="text"
-          placeholder="Adicionar outro remédio..."
-          maxlength="40"
-        />
-        <button id="btnAdd">+ Add</button>
-      </div>
-      <div class="acoes" id="acoesEdicao" hidden>
-        <button type="button" class="botao-sec ativo" id="btnPronto">
-          ✅ Pronto
-        </button>
-      </div>
+          <div class="add">
+            <input
+              id="novoMed"
+              type="text"
+              placeholder="Adicionar outro remédio..."
+              maxlength="40"
+            />
+            <button id="btnAdd">+ Add</button>
+          </div>
+          <div class="acoes" id="acoesEdicao" hidden>
+            <button type="button" class="botao-sec ativo" id="btnPronto">
+              ✅ Pronto
+            </button>
+          </div>
 
-      <div class="cartao" id="arquivados" hidden>
-        <h2>💤 Remédios guardados</h2>
-        <p>Saíram da lista, mas o histórico deles continua salvo.</p>
-        <div id="listaArquivados"></div>
-      </div>
+          <div class="cartao" id="arquivados" hidden>
+            <h2>💤 Remédios guardados</h2>
+            <p>Saíram da lista, mas o histórico deles continua salvo.</p>
+            <div id="listaArquivados"></div>
+          </div>
 
-      <div class="historico">
-        <h2>🐾 Últimos 7 dias</h2>
-        <div class="dias" id="dias"></div>
-      </div>
+          <div class="historico">
+            <h2>🐾 Últimos 7 dias</h2>
+            <div class="dias" id="dias"></div>
+          </div>
 
-      <div class="cartao">
-        <h2>💾 Backup</h2>
-        <p>
-          Os dados ficam só neste navegador. Se você limpar os dados do
-          navegador, eles somem, então salve um backup antes e restaure depois!
-        </p>
-        <div class="acoes">
-          <button class="botao-sec" id="btnExportar">⬇️ Salvar backup</button>
-          <label class="botao-sec" tabindex="0" id="lblImportar"
-            >⬆️ Restaurar<input
-              type="file"
-              id="arqBackup"
-              accept="application/json,.json"
-              hidden
-          /></label>
-        </div>
-        <div class="dica" id="infoBackup"></div>
+          <div class="cartao">
+            <h2>💾 Backup</h2>
+            <p>
+              Os dados ficam só neste navegador. Se você limpar os dados do
+              navegador, eles somem, então salve um backup antes e restaure
+              depois!
+            </p>
+            <div class="acoes">
+              <button class="botao-sec" id="btnExportar">
+                ⬇️ Salvar backup
+              </button>
+              <label class="botao-sec" tabindex="0" id="lblImportar"
+                >⬆️ Restaurar<input
+                  type="file"
+                  id="arqBackup"
+                  accept="application/json,.json"
+                  hidden
+              /></label>
+            </div>
+            <div class="dica" id="infoBackup"></div>
+          </div>
+        </section>
+
+        <section
+          class="aba"
+          id="abaAlarmes"
+          aria-label="Alarmes e lembretes"
+          hidden
+        >
+          <div class="cartao" id="cartaoPermissao">
+            <h2>🔔 Notificações do sistema</h2>
+            <p id="statusPermissao">
+              Ative as notificações para a Bubu te chamar na hora certa, além do
+              alarme na tela!
+            </p>
+            <div class="acoes">
+              <button type="button" class="botao-sec ativo" id="btnPermissao">
+                🔔 Permitir notificações
+              </button>
+              <button type="button" class="botao-sec" id="btnTestarAlarme">
+                🎵 Testar alarme
+              </button>
+            </div>
+          </div>
+
+          <div class="cartao">
+            <h2>✨ Lembretes inteligentes</h2>
+            <p>
+              Calcula o horário ideal de cada remédio usando uma média ponderada
+              exponencial dos últimos 14 dias, dando mais peso aos dias mais
+              recentes.
+            </p>
+            <label class="toggle-linha" for="chkInteligente">
+              <span>Ativar lembretes inteligentes</span>
+              <input type="checkbox" id="chkInteligente" />
+            </label>
+            <div class="lista-sugestoes" id="listaSugestoes"></div>
+          </div>
+
+          <div class="cartao">
+            <h2>⏰ Novo alarme</h2>
+            <p>Escolha o horário, o modo de aviso e quais remédios lembrar.</p>
+            <div class="form-alarme">
+              <div class="linha-form">
+                <input
+                  type="time"
+                  id="horaAlarme"
+                  value="08:00"
+                  aria-label="Horário do alarme"
+                />
+                <select id="tipoAlarme" aria-label="Modo de aviso">
+                  <option value="alarme">🚨 Tela cheia + som</option>
+                  <option value="cheia">📱 Tela cheia</option>
+                  <option value="notificacao">🔔 Só notificação</option>
+                </select>
+              </div>
+              <div class="chips-meds" id="chipsMedsAlarme"></div>
+              <button type="button" class="btn-primario" id="btnCriarAlarme">
+                + Criar alarme
+              </button>
+            </div>
+          </div>
+
+          <div class="cartao">
+            <h2>📋 Meus alarmes</h2>
+            <div class="lista-alarmes" id="listaAlarmes"></div>
+          </div>
+        </section>
       </div>
 
       <div class="rodape">
@@ -101,6 +174,54 @@
         >
           🖥️
         </button>
+      </div>
+    </div>
+
+    <nav class="nav-abas" id="navAbas" aria-label="Navegação principal">
+      <button
+        type="button"
+        class="aba-btn ativo"
+        data-aba="remedios"
+        aria-selected="true"
+      >
+        💊 Remédios
+      </button>
+      <button
+        type="button"
+        class="aba-btn"
+        data-aba="alarmes"
+        aria-selected="false"
+      >
+        ⏰ Alarmes
+      </button>
+    </nav>
+
+    <div
+      class="alarme-cheio"
+      id="alarmeCheio"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="alarmeTitulo"
+      hidden
+    >
+      <div class="alarme-caixa">
+        <div class="dupla">
+          <img class="bubu pulando" src="img/bubu_feliz.png" alt="Bubu" />
+          <img class="shiba pulando" src="img/shiba_lingua.png" alt="Shiba" />
+        </div>
+        <h2 id="alarmeTitulo">Hora do remédio, Dudu! 💊</h2>
+        <p id="alarmeTexto"></p>
+        <div class="alarme-botoes">
+          <button type="button" class="btn-primario" id="btnAlarmeTomar">
+            ✅ Já tomei!
+          </button>
+          <button type="button" class="botao-sec" id="btnAlarmeSoneca">
+            💤 Lembrar em 10 min
+          </button>
+          <button type="button" class="botao-sec" id="btnAlarmeFechar">
+            Fechar
+          </button>
+        </div>
       </div>
     </div>
 
