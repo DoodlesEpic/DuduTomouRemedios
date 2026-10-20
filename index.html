@@ -1,91 +1,127 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#F2A25C">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Remédios do Dudu">
-<title>Dudu já tomou seus remédios?</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<div class="app">
-  <div class="topo">
-    <button type="button" class="btn-tema" id="btnTema" aria-label="Alternar tema">🖥️</button>
-  </div>
-  <header>
-    <h1>Dudu já tomou seus remédios? 🐶</h1>
-    <div class="data" id="dataHoje"></div>
-  </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#F2A25C" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Remédios do Dudu" />
+    <title>Dudu já tomou seus remédios?</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <h1>Dudu já tomou seus remédios? 🐶</h1>
+        <div class="data" id="dataHoje"></div>
+      </header>
 
-  <div class="aviso-passado" id="avisoPassado" hidden>
-    <span id="textoPassado">📅 Vendo um dia anterior</span>
-    <button type="button" class="botao-sec ativo" id="btnVoltarHoje">Voltar para hoje</button>
-  </div>
+      <div class="aviso-passado" id="avisoPassado" hidden>
+        <span id="textoPassado">📅 Vendo um dia anterior</span>
+        <button type="button" class="botao-sec ativo" id="btnVoltarHoje">
+          Voltar para hoje
+        </button>
+      </div>
 
-  <div class="palco" id="palco">
-    <div class="fala">Parabéns, Dudu! Bubu te ama muito! 💕</div>
-    <div class="dupla" id="desenho"></div>
-    <div class="humor" id="humor"></div>
-  </div>
+      <div class="palco" id="palco">
+        <div class="fala">Parabéns, Dudu! Bubu te ama muito! 💕</div>
+        <div class="dupla" id="desenho"></div>
+        <div class="humor" id="humor"></div>
+      </div>
 
-  <div class="progresso"><div class="barra" id="barra"></div></div>
-  <div class="lista" id="lista"></div>
-  <div class="dica" id="dica" hidden>Arraste pelo ⠿ para mudar a ordem · ✕ guarda o remédio (o histórico não se perde)</div>
+      <div class="progresso"><div class="barra" id="barra"></div></div>
+      <div class="lista" id="lista"></div>
+      <div class="dica" id="dica" hidden>
+        Arraste para mudar a ordem · ✕ guarda o remédio · Toque em
+        <b>Pronto</b> para sair
+      </div>
 
-  <div class="add">
-    <input id="novoMed" type="text" placeholder="Adicionar outro remédio..." maxlength="40">
-    <button id="btnAdd">+ Add</button>
-  </div>
-  <div class="acoes">
-    <button class="botao-sec" id="btnEditar" aria-pressed="false">✏️ Editar lista</button>
-  </div>
+      <div class="add">
+        <input
+          id="novoMed"
+          type="text"
+          placeholder="Adicionar outro remédio..."
+          maxlength="40"
+        />
+        <button id="btnAdd">+ Add</button>
+      </div>
+      <div class="acoes" id="acoesEdicao" hidden>
+        <button type="button" class="botao-sec ativo" id="btnPronto">
+          ✅ Pronto
+        </button>
+      </div>
 
-  <div class="cartao" id="arquivados" hidden>
-    <h2>💤 Remédios guardados</h2>
-    <p>Saíram da lista, mas o histórico deles continua salvo.</p>
-    <div id="listaArquivados"></div>
-  </div>
+      <div class="cartao" id="arquivados" hidden>
+        <h2>💤 Remédios guardados</h2>
+        <p>Saíram da lista, mas o histórico deles continua salvo.</p>
+        <div id="listaArquivados"></div>
+      </div>
 
-  <div class="historico">
-    <h2>🐾 Últimos 7 dias</h2>
-    <div class="dias" id="dias"></div>
-  </div>
+      <div class="historico">
+        <h2>🐾 Últimos 7 dias</h2>
+        <div class="dias" id="dias"></div>
+      </div>
 
-  <div class="cartao">
-    <h2>💾 Backup</h2>
-    <p>Os dados ficam só neste navegador. Se você limpar os dados do navegador, eles somem, então salve um backup antes e restaure depois!</p>
-    <div class="acoes">
-      <button class="botao-sec" id="btnExportar">⬇️ Salvar backup</button>
-      <label class="botao-sec" tabindex="0" id="lblImportar">⬆️ Restaurar<input type="file" id="arqBackup" accept="application/json,.json" hidden></label>
+      <div class="cartao">
+        <h2>💾 Backup</h2>
+        <p>
+          Os dados ficam só neste navegador. Se você limpar os dados do
+          navegador, eles somem, então salve um backup antes e restaure depois!
+        </p>
+        <div class="acoes">
+          <button class="botao-sec" id="btnExportar">⬇️ Salvar backup</button>
+          <label class="botao-sec" tabindex="0" id="lblImportar"
+            >⬆️ Restaurar<input
+              type="file"
+              id="arqBackup"
+              accept="application/json,.json"
+              hidden
+          /></label>
+        </div>
+        <div class="dica" id="infoBackup"></div>
+      </div>
+
+      <div class="rodape">
+        <span>Feito com amor pela Bubu 🐾 marca um por um todo dia!</span>
+        <button
+          type="button"
+          class="btn-tema"
+          id="btnTema"
+          aria-label="Alternar tema"
+        >
+          🖥️
+        </button>
+      </div>
     </div>
-    <div class="dica" id="infoBackup"></div>
-  </div>
 
-  <div class="rodape">Feito com amor pela Bubu 🐾 marca um por um todo dia!</div>
-</div>
-
-<div class="toast" id="toast" role="status" aria-live="polite" hidden>
-  <span id="toastTexto"></span>
-  <button type="button" id="btnDesfazer">↩ Desfazer</button>
-</div>
-
-<dialog id="dialogo">
-  <form method="dialog">
-    <h3 id="dialogoTitulo"></h3>
-    <p id="dialogoTexto"></p>
-    <div class="botoes">
-      <button class="botao-sec" value="nao" id="dialogoNao">Cancelar</button>
-      <button class="botao-sec" value="sim" id="dialogoSim">Sim</button>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden>
+      <span id="toastTexto"></span>
+      <button type="button" id="btnDesfazer">↩ Desfazer</button>
     </div>
-  </form>
-</dialog>
 
-<script type="module" src="main.js"></script>
-</body>
+    <dialog id="dialogo">
+      <form method="dialog">
+        <h3 id="dialogoTitulo"></h3>
+        <p id="dialogoTexto"></p>
+        <div class="botoes">
+          <button class="botao-sec" value="nao" id="dialogoNao">
+            Cancelar
+          </button>
+          <button class="botao-sec" value="sim" id="dialogoSim">Sim</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="main.js"></script>
+  </body>
 </html>

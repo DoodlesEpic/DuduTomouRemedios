@@ -1,36 +1,40 @@
-const CACHE = 'dudu-remedios-v9';
+const CACHE = "dudu-remedios-v10";
 const FILES = [
-  '.',
-  'index.html',
-  'styles.css',
-  'main.js',
-  'manifest.json',
-  'icon-192.png',
-  'icon-512.png',
-  'img/bubu_triste.png',
-  'img/bubu_neutra.png',
-  'img/bubu_feliz.png',
-  'img/bubu_comemorando.png',
-  'img/shiba_sentado.png',
-  'img/shiba_lingua.png',
-  'img/shiba_rindo.png',
-  'img/shiba_deitado.png',
-  'img/shiba_sentado_triste.png',
-  'img/shiba_deitado_triste.png'
+  ".",
+  "index.html",
+  "styles.css",
+  "main.js",
+  "manifest.json",
+  "icon-192.png",
+  "icon-512.png",
+  "img/bubu_triste.png",
+  "img/bubu_neutra.png",
+  "img/bubu_feliz.png",
+  "img/bubu_comemorando.png",
+  "img/shiba_sentado.png",
+  "img/shiba_lingua.png",
+  "img/shiba_rindo.png",
+  "img/shiba_deitado.png",
+  "img/shiba_sentado_triste.png",
+  "img/shiba_deitado_triste.png",
 ];
 
-self.addEventListener('install', (e) => {
+self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)));
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
+self.addEventListener("activate", (e) => {
   e.waitUntil(
-    caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+    caches
+      .keys()
+      .then((ks) =>
+        Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k))),
+      ),
   );
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (e) => {
+self.addEventListener("fetch", (e) => {
   e.respondWith(caches.match(e.request).then((r) => r || fetch(e.request)));
 });
