@@ -1,4 +1,4 @@
-const CACHE = "dudu-remedios-v11";
+const CACHE = "dudu-remedios-v12";
 const FILES = [
   ".",
   "index.html",
