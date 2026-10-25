@@ -119,7 +119,8 @@
               <h2>✨ Lembretes inteligentes</h2>
               <p>
                 Calcula automaticamente os horários de notificação com base nos
-                horários em que você costuma tomar cada remédio.
+                horários em que você costuma tomar cada remédio. Ideal para
+                quando sua rotina varia um pouquinho!
               </p>
               <label class="toggle-linha" for="chkInteligente">
                 <span>Ativar lembretes inteligentes</span>
@@ -129,9 +130,10 @@
             </div>
 
             <div class="cartao">
-              <h2>⏰ Novo alarme</h2>
+              <h2>⏰ Novo horário fixo</h2>
               <p>
-                Escolha o horário, o modo de aviso e quais remédios lembrar.
+                Prefere horários marcados? Agende uma notificação discreta ou um
+                alarme em tela cheia para remédios com hora certa.
               </p>
               <div class="form-alarme">
                 <div class="linha-form">
@@ -139,23 +141,27 @@
                     type="time"
                     id="horaAlarme"
                     value="08:00"
-                    aria-label="Horário do alarme"
+                    aria-label="Horário do lembrete ou alarme"
                   />
                   <select id="tipoAlarme" aria-label="Modo de aviso">
-                    <option value="alarme">🚨 Tela cheia + som</option>
-                    <option value="cheia">📱 Tela cheia</option>
-                    <option value="notificacao">🔔 Só notificação</option>
+                    <option value="alarme">🚨 Alarme (tela cheia + som)</option>
+                    <option value="cheia">📱 Alerta em tela cheia</option>
+                    <option value="notificacao">🔔 Notificação discreta</option>
                   </select>
                 </div>
                 <div class="chips-meds" id="chipsMedsAlarme"></div>
                 <button type="button" class="btn-primario" id="btnCriarAlarme">
-                  + Criar alarme
+                  + Agendar horário fixo
                 </button>
               </div>
             </div>
 
             <div class="cartao">
-              <h2>📋 Meus alarmes</h2>
+              <h2>📋 Lembretes e alarmes</h2>
+              <p>
+                Seus avisos com horário fixo (funcionam em conjunto com os
+                lembretes inteligentes).
+              </p>
               <div class="lista-alarmes" id="listaAlarmes"></div>
             </div>
           </section>

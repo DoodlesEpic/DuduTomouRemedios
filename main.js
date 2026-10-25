@@ -165,6 +165,7 @@ async function salvar() {
   await store.set(`lista:${diaSelecionado.slice(4)}`, JSON.stringify(meds));
   await store.set("alarmes", JSON.stringify(alarmes));
   await store.set("notif-config", JSON.stringify(configNotif));
+  sincronizarNotificacoesSistema();
 }
 
 function atualizarData() {
@@ -1040,25 +1041,84 @@ document.addEventListener("touchcancel", finalizarGestoAba, { passive: true });
 
 // ---------- alarmes e lembretes inteligentes ----------
 const ROTULO_TIPO_ALARME = {
-  alarme: "🚨 Tela cheia + som",
-  cheia: "📱 Tela cheia",
-  notificacao: "🔔 Só notificação",
+  alarme: "🚨 Alarme (tela cheia + som)",
+  cheia: "📱 Alerta em tela cheia",
+  notificacao: "🔔 Notificação discreta",
 };
 
-function atualizarStatusPermissao() {
+const apiNotifTauri = () => window.__TAURI__?.notification || null;
+
+let canaisNotifCriados = false;
+async function garantirCanaisNotificacao() {
+  const tn = apiNotifTauri();
+  if (!tn?.createChannel || canaisNotifCriados) return;
+  try {
+    await tn.createChannel({
+      id: "dudu-alarmes",
+      name: "Alarmes de remédios",
+      description: "Alertas importantes com som e vibração para tomar remédios",
+      importance: 4,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+      lightsColor: "#F2A25C",
+    });
+    await tn.createChannel({
+      id: "dudu-lembretes",
+      name: "Lembretes discretos",
+      description: "Notificações suaves para lembrar dos remédios",
+      importance: 3,
+      visibility: 1,
+      vibration: true,
+    });
+    canaisNotifCriados = true;
+  } catch {}
+}
+
+async function estadoPermissaoNotificacao() {
+  const tn = apiNotifTauri();
+  if (tn) {
+    try {
+      const res = await window.__TAURI_INTERNALS__?.invoke?.(
+        "plugin:notification|is_permission_granted",
+      );
+      if (res === true) return "granted";
+      if (res === false) {
+        return window.Notification?.permission === "denied"
+          ? "denied"
+          : "default";
+      }
+      return "default";
+    } catch {
+      try {
+        const ok = await tn.isPermissionGranted();
+        return ok ? "granted" : "default";
+      } catch {
+        return "default";
+      }
+    }
+  }
+  if (!("Notification" in window)) return "unsupported";
+  return Notification.permission;
+}
+
+async function atualizarStatusPermissao() {
   const txt = $("statusPermissao");
   const btn = $("btnPermissao");
   const amb = nomeAmbiente();
-  if (!("Notification" in window)) {
+  const perm = await estadoPermissaoNotificacao();
+  if (perm === "unsupported") {
     txt.textContent = `Este ${amb} não suporta notificações do sistema, mas o alarme em tela cheia com som funciona com o app aberto!`;
     btn.hidden = true;
     return;
   }
-  if (Notification.permission === "granted") {
-    txt.textContent =
-      "Notificações do sistema ativas! A Bubu vai te avisar nos horários combinados. 💕";
+  if (perm === "granted") {
+    await garantirCanaisNotificacao();
+    txt.textContent = ehAppTauri()
+      ? "Notificações e alarmes do sistema ativos! A Bubu vai te chamar mesmo com o app em segundo plano. 💕"
+      : "Notificações do sistema ativas! A Bubu vai te avisar nos horários combinados. 💕";
     btn.hidden = true;
-  } else if (Notification.permission === "denied") {
+  } else if (perm === "denied") {
     txt.textContent = `As notificações foram bloqueadas no ${amb}. Você ainda recebe alarmes em tela cheia com o app aberto.`;
     btn.hidden = true;
   } else {
@@ -1069,11 +1129,19 @@ function atualizarStatusPermissao() {
 }
 
 $("btnPermissao").addEventListener("click", async () => {
-  if (!("Notification" in window)) return;
+  const tn = apiNotifTauri();
   try {
-    const res = await Notification.requestPermission();
-    atualizarStatusPermissao();
-    if (res === "granted") mostrarToast("🔔 Notificações ativadas!");
+    let res = "default";
+    if (tn?.requestPermission) {
+      res = await tn.requestPermission();
+    } else if ("Notification" in window) {
+      res = await Notification.requestPermission();
+    }
+    await atualizarStatusPermissao();
+    if (res === "granted") {
+      await sincronizarNotificacoesSistema();
+      mostrarToast("🔔 Notificações ativadas!");
+    }
   } catch {}
 });
 
@@ -1114,10 +1182,11 @@ async function calcularHorariosInteligentes() {
 }
 
 async function renderAbaAlarmes() {
-  atualizarStatusPermissao();
+  await atualizarStatusPermissao();
   $("chkInteligente").checked = Boolean(configNotif.inteligente);
 
   const sugestoes = await calcularHorariosInteligentes();
+  sincronizarNotificacoesSistema();
   const contSug = $("listaSugestoes");
   contSug.innerHTML = "";
   medsPerm.forEach((m) => {
@@ -1153,7 +1222,11 @@ async function renderAbaAlarmes() {
   contAlarmes.innerHTML = "";
   if (alarmes.length === 0) {
     contAlarmes.appendChild(
-      el("div", "dica", "Nenhum alarme criado ainda. Crie um acima!"),
+      el(
+        "div",
+        "dica",
+        "Nenhum horário fixo agendado. Agende um acima ou use os lembretes inteligentes!",
+      ),
     );
     return;
   }
@@ -1175,7 +1248,7 @@ async function renderAbaAlarmes() {
     const chk = el("input");
     chk.type = "checkbox";
     chk.checked = Boolean(al.ativo);
-    chk.setAttribute("aria-label", `Ativar alarme das ${al.hora}`);
+    chk.setAttribute("aria-label", `Ativar horário das ${al.hora}`);
     chk.addEventListener("change", async () => {
       al.ativo = chk.checked;
       await salvar();
@@ -1185,12 +1258,12 @@ async function renderAbaAlarmes() {
 
     const btnDel = el("button", "tirar", "✕");
     btnDel.type = "button";
-    btnDel.setAttribute("aria-label", `Apagar alarme das ${al.hora}`);
+    btnDel.setAttribute("aria-label", `Apagar horário das ${al.hora}`);
     btnDel.addEventListener("click", async () => {
       alarmes = alarmes.filter((x) => x.id !== al.id);
       await salvar();
       renderAbaAlarmes();
-      mostrarToast("Alarme removido");
+      mostrarToast("Horário removido");
     });
     ctrl.appendChild(btnDel);
 
@@ -1233,15 +1306,93 @@ $("btnCriarAlarme").addEventListener("click", async () => {
   alarmes.sort((a, b) => a.hora.localeCompare(b.hora));
   await salvar();
   renderAbaAlarmes();
-  mostrarToast(`⏰ Alarme criado para ${hora}`);
+  mostrarToast(
+    tipo === "notificacao"
+      ? `🔔 Notificação agendada para ${hora}`
+      : `⏰ Alarme agendado para ${hora}`,
+  );
 });
 
-// ---------- som de alarme (Web Audio API) e disparo ----------
+// ---------- agendamento nativo (Tauri), som de alarme e disparo ----------
 let timerSomAlarme = null;
 let ctxAudio = null;
 let medsAlarmeAtual = [];
 let sonecas = [];
 const disparosHoje = new Set();
+
+function hashIdNotif(chave) {
+  let h = 2166136261;
+  for (let i = 0; i < chave.length; i++) {
+    h ^= chave.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h & 0x3fffffff || 1;
+}
+
+async function sincronizarNotificacoesSistema() {
+  const tn = apiNotifTauri();
+  if (!tn?.cancelAll || !tn?.Schedule) return;
+  try {
+    const perm = await estadoPermissaoNotificacao();
+    if (perm !== "granted") return;
+    await garantirCanaisNotificacao();
+    await tn.cancelAll();
+
+    const ehHoje = diaSelecionado === hojeChave();
+    const agendamentos = [];
+
+    for (const al of alarmes) {
+      if (!al.ativo) continue;
+      const [hh, mm] = (al.hora || "08:00").split(":").map(Number);
+      if (isNaN(hh) || isNaN(mm)) continue;
+      const listaMeds = al.meds?.length ? al.meds : medsPerm;
+      const pendentes = ehHoje
+        ? listaMeds.filter((m) => !marcados[m])
+        : listaMeds;
+      const nomes = (pendentes.length > 0 ? pendentes : listaMeds).join(", ");
+      if (!nomes) continue;
+      agendamentos.push({
+        id: hashIdNotif(`al:${al.id}`),
+        title: "Hora do remédio, Dudu! 💊",
+        body: `Hora de tomar ${nomes}!`,
+        channelId:
+          al.tipo === "notificacao" ? "dudu-lembretes" : "dudu-alarmes",
+        schedule: tn.Schedule.interval({ hour: hh, minute: mm }, true),
+        autoCancel: true,
+        extra: { meds: listaMeds, tipo: al.tipo },
+      });
+    }
+
+    if (configNotif.inteligente) {
+      for (const [med, hSug] of Object.entries(horariosInteligentes)) {
+        const [hh, mm] = hSug.split(":").map(Number);
+        if (isNaN(hh) || isNaN(mm)) continue;
+        agendamentos.push({
+          id: hashIdNotif(`int:${med}`),
+          title: "✨ Lembrete inteligente da Bubu! 💊",
+          body: `Hora de tomar ${med}!`,
+          channelId: "dudu-alarmes",
+          schedule: tn.Schedule.interval({ hour: hh, minute: mm }, true),
+          autoCancel: true,
+          extra: {
+            meds: [med],
+            tipo: "alarme",
+            origem: "✨ Lembrete inteligente",
+          },
+        });
+      }
+    }
+
+    for (const item of agendamentos) {
+      try {
+        await window.__TAURI_INTERNALS__?.invoke?.(
+          "plugin:notification|notify",
+          { options: item },
+        );
+      } catch {}
+    }
+  } catch {}
+}
 
 function tocarBipeCarinhoso() {
   try {
@@ -1273,9 +1424,26 @@ function pararSomAlarme() {
   timerSomAlarme = null;
 }
 
-async function enviarNotificacaoSistema(titulo, corpo) {
-  if (!("Notification" in window) || Notification.permission !== "granted")
-    return;
+async function enviarNotificacaoSistema(titulo, corpo, tipo = "alarme") {
+  const perm = await estadoPermissaoNotificacao();
+  if (perm !== "granted") return;
+  const tn = apiNotifTauri();
+  if (tn) {
+    try {
+      await garantirCanaisNotificacao();
+      await window.__TAURI_INTERNALS__?.invoke?.("plugin:notification|notify", {
+        options: {
+          id: hashIdNotif(`now:${titulo}:${Date.now()}`),
+          title: titulo,
+          body: corpo,
+          channelId: tipo === "notificacao" ? "dudu-lembretes" : "dudu-alarmes",
+          autoCancel: true,
+        },
+      });
+      return;
+    } catch {}
+  }
+  if (!("Notification" in window)) return;
   try {
     const reg = await navigator.serviceWorker?.getRegistration?.();
     if (reg?.showNotification) {
@@ -1285,6 +1453,8 @@ async function enviarNotificacaoSistema(titulo, corpo) {
         badge: "icon-192.png",
         tag: "dudu-alarme",
         renotify: true,
+        requireInteraction: tipo !== "notificacao",
+        vibrate: tipo === "notificacao" ? [150] : [250, 100, 250, 100, 300],
       });
       return;
     }
@@ -1292,12 +1462,35 @@ async function enviarNotificacaoSistema(titulo, corpo) {
   } catch {}
 }
 
-function dispararAviso(medsAlvo, tipo = "alarme", origem = "") {
+let wakeLockAtivo = null;
+async function gerenciarWakeLock(ativar) {
+  if (!("wakeLock" in navigator)) return;
+  try {
+    if (ativar && !wakeLockAtivo) {
+      wakeLockAtivo = await navigator.wakeLock.request("screen");
+      wakeLockAtivo.addEventListener("release", () => {
+        wakeLockAtivo = null;
+      });
+    } else if (!ativar && wakeLockAtivo) {
+      await wakeLockAtivo.release();
+      wakeLockAtivo = null;
+    }
+  } catch {}
+}
+
+function dispararAviso(
+  medsAlvo,
+  tipo = "alarme",
+  origem = "",
+  notificarSistema = true,
+) {
   const pendentes = medsAlvo.filter((m) => !marcados[m]);
   const listaNomes = pendentes.length > 0 ? pendentes : medsAlvo;
   if (listaNomes.length === 0) return;
   const texto = `${origem ? `${origem}: ` : ""}Hora de tomar ${listaNomes.join(", ")}!`;
-  enviarNotificacaoSistema("Hora do remédio, Dudu! 💊", texto);
+  if (notificarSistema) {
+    enviarNotificacaoSistema("Hora do remédio, Dudu! 💊", texto, tipo);
+  }
 
   if (tipo === "notificacao") {
     mostrarToast(`🔔 ${texto}`);
@@ -1307,6 +1500,7 @@ function dispararAviso(medsAlvo, tipo = "alarme", origem = "") {
   medsAlarmeAtual = listaNomes;
   $("alarmeTexto").textContent = texto;
   $("alarmeCheio").hidden = false;
+  gerenciarWakeLock(true);
   pararSomAlarme();
   if (tipo === "alarme") {
     tocarBipeCarinhoso();
@@ -1316,19 +1510,37 @@ function dispararAviso(medsAlvo, tipo = "alarme", origem = "") {
 
 function fecharAlarmeCheio() {
   pararSomAlarme();
+  gerenciarWakeLock(false);
   $("alarmeCheio").hidden = true;
   medsAlarmeAtual = [];
 }
 
 $("btnAlarmeFechar").addEventListener("click", fecharAlarmeCheio);
 
-$("btnAlarmeSoneca").addEventListener("click", () => {
+$("btnAlarmeSoneca").addEventListener("click", async () => {
   const copia = [...medsAlarmeAtual];
   fecharAlarmeCheio();
   const alvo = new Date(Date.now() + 10 * 60000);
   const hh = String(alvo.getHours()).padStart(2, "0");
   const mm = String(alvo.getMinutes()).padStart(2, "0");
   sonecas.push({ hora: `${hh}:${mm}`, meds: copia });
+  const tn = apiNotifTauri();
+  if (tn?.Schedule) {
+    try {
+      await garantirCanaisNotificacao();
+      await window.__TAURI_INTERNALS__?.invoke?.("plugin:notification|notify", {
+        options: {
+          id: hashIdNotif(`soneca:${hh}:${mm}`),
+          title: "💤 Soneca da Bubu! 💊",
+          body: `Hora de tomar ${copia.join(", ")}!`,
+          channelId: "dudu-alarmes",
+          schedule: tn.Schedule.at(alvo, false, true),
+          autoCancel: true,
+          extra: { meds: copia, tipo: "alarme", origem: "💤 Soneca" },
+        },
+      });
+    } catch {}
+  }
   mostrarToast(`💤 Soneca ativada para ${hh}:${mm}`);
 });
 
@@ -1399,8 +1611,33 @@ function checarAlarmes() {
   sonecas = restantes;
 }
 
+function configurarEventosNotificacaoNativa() {
+  const tn = apiNotifTauri();
+  if (!tn) return;
+  try {
+    tn.onAction?.((ev) => {
+      const extra = ev?.notification?.extra;
+      const medsAlvo = Array.isArray(extra?.meds) ? extra.meds : medsPerm;
+      const tipo = extra?.tipo || "alarme";
+      const origem = extra?.origem || "";
+      if (tipo !== "notificacao") {
+        dispararAviso(medsAlvo, tipo, origem, false);
+      }
+    });
+    tn.onNotificationReceived?.((notif) => {
+      if (document.hidden) return;
+      const extra = notif?.extra;
+      const medsAlvo = Array.isArray(extra?.meds) ? extra.meds : medsPerm;
+      const tipo = extra?.tipo || "alarme";
+      const origem = extra?.origem || "";
+      dispararAviso(medsAlvo, tipo, origem, false);
+    });
+  } catch {}
+}
+
 navigator.storage?.persist?.().catch(() => {});
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
+configurarEventosNotificacaoNativa();
 carregar();
