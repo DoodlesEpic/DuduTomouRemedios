@@ -13,6 +13,9 @@ let abaAtiva = "remedios";
 
 const img = (nome) => `img/${nome}.png`;
 const $ = (id) => document.getElementById(id);
+const ehAppTauri = () =>
+  Boolean(window.__TAURI_INTERNALS__ || window.__TAURI__);
+const nomeAmbiente = () => (ehAppTauri() ? "app" : "navegador");
 
 function dataDe(d) {
   const ano = d.getFullYear();
@@ -96,7 +99,7 @@ function aplicarTema() {
     ?.setAttribute("content", escuro ? "#18161B" : "#F2A25C");
   const btn = $("btnTema");
   if (btn) {
-    btn.textContent = ICONES_TEMA[modoTema];
+    btn.textContent = `${ICONES_TEMA[modoTema]} ${ROTULOS_TEMA[modoTema]}`;
     btn.title = ROTULOS_TEMA[modoTema];
     btn.setAttribute(
       "aria-label",
@@ -295,7 +298,6 @@ function render() {
   const lista = $("lista");
   lista.innerHTML = "";
   lista.classList.toggle("editando", editando);
-  $("dica").hidden = !editando;
   $("acoesEdicao").hidden = !editando;
 
   meds.forEach((m, i) => {
@@ -547,7 +549,6 @@ function iniciarArrasto() {
   if (!editando) {
     editando = true;
     $("lista").classList.add("editando");
-    $("dica").hidden = false;
     $("acoesEdicao").hidden = false;
     document.querySelectorAll("#lista .med").forEach((item) => {
       item.setAttribute("role", "listitem");
@@ -834,6 +835,11 @@ async function importarBackup(arquivo) {
 }
 
 async function renderInfoBackup() {
+  const txtBackup = $("textoBackup");
+  if (txtBackup) {
+    const amb = nomeAmbiente();
+    txtBackup.textContent = `Os dados ficam só neste ${amb}. Se você limpar os dados do ${amb}, eles somem, então salve um backup antes e restaure depois!`;
+  }
   const ultimo = await store.get("backup-ultimo");
   $("infoBackup").textContent = ultimo
     ? `Último backup salvo em ${new Date(ultimo).toLocaleDateString("pt-BR")}`
@@ -901,8 +907,22 @@ document.addEventListener("pointerdown", (e) => {
 function trocarAba(nova) {
   if (nova !== "remedios" && nova !== "alarmes") return;
   abaAtiva = nova;
-  $("abaRemedios").hidden = nova !== "remedios";
-  $("abaAlarmes").hidden = nova !== "alarmes";
+  if (nova === "remedios" && editando) {
+    // mantém estado se já estava
+  } else if (nova !== "remedios" && editando) {
+    editando = false;
+    render();
+  }
+  const trilho = $("abasTrilho");
+  trilho.classList.remove("arrastando-aba");
+  trilho.style.transform = "";
+  trilho.dataset.aba = nova;
+  const secRem = $("abaRemedios");
+  const secAla = $("abaAlarmes");
+  secRem.classList.toggle("ativa", nova === "remedios");
+  secAla.classList.toggle("ativa", nova === "alarmes");
+  secRem.inert = nova !== "remedios";
+  secAla.inert = nova !== "alarmes";
   document.querySelectorAll(".aba-btn").forEach((btn) => {
     const ativa = btn.dataset.aba === nova;
     btn.classList.toggle("ativo", ativa);
@@ -931,38 +951,92 @@ window.addEventListener(
   { passive: true },
 );
 
-let gestoToque = null;
+let gestoAba = null;
 document.addEventListener(
   "touchstart",
   (e) => {
-    if (e.touches.length !== 1 || drag || pre || !$("alarmeCheio").hidden)
+    if (
+      e.touches.length !== 1 ||
+      drag ||
+      pre ||
+      editando ||
+      !$("alarmeCheio").hidden
+    )
       return;
-    if (e.target.closest("input, select, dialog")) return;
+    if (e.target.closest("input, select, dialog, .nav-abas")) return;
     const t = e.touches[0];
-    gestoToque = { x: t.clientX, y: t.clientY, t: Date.now() };
+    gestoAba = {
+      x0: t.clientX,
+      y0: t.clientY,
+      dx: 0,
+      t0: Date.now(),
+      ativo: false,
+      bloqueado: false,
+      largura: $("abasConteudo").clientWidth + 24,
+    };
   },
   { passive: true },
 );
 
 document.addEventListener(
-  "touchend",
+  "touchmove",
   (e) => {
-    if (!gestoToque || e.changedTouches.length !== 1 || drag || pre) {
-      gestoToque = null;
+    if (
+      !gestoAba ||
+      gestoAba.bloqueado ||
+      e.touches.length !== 1 ||
+      drag ||
+      pre
+    )
       return;
+    const t = e.touches[0];
+    const dx = t.clientX - gestoAba.x0;
+    const dy = t.clientY - gestoAba.y0;
+    if (!gestoAba.ativo) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) {
+        gestoAba.bloqueado = true;
+        return;
+      }
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        gestoAba.ativo = true;
+        $("abasTrilho").classList.add("arrastando-aba");
+        if (abaAtiva === "remedios") renderAbaAlarmes();
+      } else {
+        return;
+      }
     }
-    const t = e.changedTouches[0];
-    const dx = t.clientX - gestoToque.x;
-    const dy = t.clientY - gestoToque.y;
-    const dt = Date.now() - gestoToque.t;
-    gestoToque = null;
-    if (dt < 600 && Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy) * 1.6) {
-      if (dx < 0 && abaAtiva === "remedios") trocarAba("alarmes");
-      else if (dx > 0 && abaAtiva === "alarmes") trocarAba("remedios");
+    e.preventDefault();
+    const base = abaAtiva === "alarmes" ? -gestoAba.largura : 0;
+    let offset = base + dx;
+    if (offset > 0) offset *= 0.25;
+    if (offset < -gestoAba.largura) {
+      offset = -gestoAba.largura + (offset + gestoAba.largura) * 0.25;
     }
+    gestoAba.dx = dx;
+    $("abasTrilho").style.transform = `translateX(${offset}px)`;
   },
-  { passive: true },
+  { passive: false },
 );
+
+function finalizarGestoAba() {
+  if (!gestoAba) return;
+  const g = gestoAba;
+  gestoAba = null;
+  if (!g.ativo) return;
+  const dt = Math.max(1, Date.now() - g.t0);
+  const vel = g.dx / dt;
+  const limiar = g.largura * 0.26;
+  let destino = abaAtiva;
+  if (abaAtiva === "remedios" && (g.dx < -limiar || vel < -0.35)) {
+    destino = "alarmes";
+  } else if (abaAtiva === "alarmes" && (g.dx > limiar || vel > 0.35)) {
+    destino = "remedios";
+  }
+  trocarAba(destino);
+}
+
+document.addEventListener("touchend", finalizarGestoAba, { passive: true });
+document.addEventListener("touchcancel", finalizarGestoAba, { passive: true });
 
 // ---------- alarmes e lembretes inteligentes ----------
 const ROTULO_TIPO_ALARME = {
@@ -974,9 +1048,9 @@ const ROTULO_TIPO_ALARME = {
 function atualizarStatusPermissao() {
   const txt = $("statusPermissao");
   const btn = $("btnPermissao");
+  const amb = nomeAmbiente();
   if (!("Notification" in window)) {
-    txt.textContent =
-      "Este navegador não suporta notificações do sistema, mas o alarme em tela cheia com som funciona com o app aberto!";
+    txt.textContent = `Este ${amb} não suporta notificações do sistema, mas o alarme em tela cheia com som funciona com o app aberto!`;
     btn.hidden = true;
     return;
   }
@@ -985,8 +1059,7 @@ function atualizarStatusPermissao() {
       "Notificações do sistema ativas! A Bubu vai te avisar nos horários combinados. 💕";
     btn.hidden = true;
   } else if (Notification.permission === "denied") {
-    txt.textContent =
-      "As notificações foram bloqueadas no navegador. Você ainda recebe alarmes em tela cheia com o app aberto.";
+    txt.textContent = `As notificações foram bloqueadas no ${amb}. Você ainda recebe alarmes em tela cheia com o app aberto.`;
     btn.hidden = true;
   } else {
     txt.textContent =
@@ -1134,6 +1207,12 @@ $("chkInteligente").addEventListener("change", async (e) => {
       ? "✨ Lembretes inteligentes ativados"
       : "Lembretes inteligentes desativados",
   );
+});
+
+$("horaAlarme").addEventListener("click", (e) => {
+  try {
+    e.currentTarget.showPicker?.();
+  } catch {}
 });
 
 $("btnCriarAlarme").addEventListener("click", async () => {
