@@ -1,6 +1,6 @@
 [package]
 name = "remedios-do-dudu"
-version = "1.7.0"
+version = "1.8.0"
 description = "Dudu já tomou seus remédios?"
 edition = "2024"
 
